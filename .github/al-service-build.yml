@@ -1,0 +1,44 @@
+name: al-service-build
+on:
+  push:
+    branches:
+    - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        password: ${{secrets.DOCKERHUB_TOKEN}}
+        username: ${{secrets.DOCKERHUB_USERNAME}}
+        
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Set env
+      run: echo "AL_SERVICE_VERSION=$(cat VERSION)" >> $GITHUB_ENV
+
+    - name: Set env base
+      run: echo "AL_SERVICE_VERSION_BASE=$(cat VERSION_BASE)" >> $GITHUB_ENV
+
+    - name: Build
+      uses: docker/build-push-action@v6
+      with:
+        file: Dockerfile
+        push: true
+        tags: kulukami/assemblyline-service-clamav:${{ env.AL_SERVICE_VERSION_BASE }}${{ env.AL_SERVICE_VERSION }}
+
+    - name: Update 
+      run: zip -r elkeid_driver.zip ~/all_elkeid_drivers
+
+    - name: Upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: service_manifest.yml
+        path: service_manifest.yml

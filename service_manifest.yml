@@ -1,0 +1,100 @@
+name: ClamAV-Service
+version: $SERVICE_TAG
+description: Scans files using ClamAV antivirus
+enabled: true
+
+accepts: .*
+rejects: empty
+stage: CORE
+category: Antivirus
+file_required: true
+timeout: 90
+
+# Any config key not starting with _ will be added to the clamd.conf file
+config:
+  ConcurrentDatabaseReload: no
+  DetectPUA: yes
+  AlertBrokenExecutables: yes
+  AlertBrokenMedia: yes
+  AlertEncrypted: yes
+  AlertOLE2Macros: yes
+  AlertPartitionIntersection: yes
+  MaxScanTime: 60000
+  _WAIT_FOR_DAEMON: 60
+
+# -1000: safe
+# 0 - 299: informative
+# 300 - 699: suspicious
+# 700 - 999: highly suspicious
+# >= 1000: malicious
+
+heuristics:
+  - description: ClamAV found file to be malicious
+    filetype: "*"
+    heur_id: 1
+    name: ClamAV VIRUS detection
+    score: 1000
+  - description: ClamAV found file to contain a Potentially Unwanted Application
+    filetype: "*"
+    heur_id: 2
+    name: ClamAV PUA detection
+    score: 300
+  - description: ClamAV triggered heuristic match
+    filetype: "*"
+    heur_id: 3
+    name: ClamAV heuristic detection
+    score: 400
+
+docker_config:
+  image: $REGISTRY/cccs/assemblyline-service-clamav:$SERVICE_TAG
+  cpu_cores: 1.0
+  ram_mb: 3072
+  ram_mb_min: 1536
+
+update_config:
+  update_interval_seconds: 7200 # 2 hours
+  generates_signatures: false
+  wait_for_update: true
+  sources:
+    # Source named "freshclam" is reserved for updates using FreshClam utility
+    # Headers are treated as freshclam.conf options
+    - name: freshclam
+      uri: database.clamav.net
+      headers:
+        - name: DNSDatabaseInfo
+          value: current.cvd.clamav.net
+        # Additional databases can be specified using DatabaseCustomURL option
+        # - name: DatabaseCustomURL
+        #   value: http://www.rfxn.com/downloads/rfxn.ndb
+    # Other sources are just downloaded and put in the database directory
+    # More resources:
+    # https://github.com/extremeshok/clamav-unofficial-sigs/tree/master
+    # https://ftp.swin.edu.au/sanesecurity/ (https://sanesecurity.com/usage/signatures/)
+    # https://malware.expert/howto/extending-clamav-signatures-with-rfxn-database-for-php-malwares/
+    - name: RFXN - HDB database
+      uri: http://www.rfxn.com/downloads/rfxn.hdb
+    - name: RFXN - YARA database
+      uri: http://www.rfxn.com/downloads/rfxn.yara
+    - name: SanseSecurity - rouge.hdb
+      uri: https://ftp.swin.edu.au/sanesecurity/rogue.hdb
+    - name: Rollernet.us - winnow_malware.hdb
+      uri: https://mirror.rollernet.us/sanesecurity/winnow_malware.hdb
+
+dependencies:
+  updates:
+    container:
+      ram_mb: 3072
+      ram_mb_min: 1024
+      allow_internet_access: true
+      command: ["python", "-m", "service.updater"]
+      image: $REGISTRY/cccs/assemblyline-service-clamav:$SERVICE_TAG
+      ports: ["5003"]
+      environment:
+        - name: UPDATER_DIR
+          value: /opt/clamav_db/
+    volumes:
+      updates:
+        mount_path: /opt/clamav_db/
+        capacity: 2147483648 # 2 GB
+        storage_class: default
+    run_as_core: True
