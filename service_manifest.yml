@@ -95,6 +95,6 @@ dependencies:
     volumes:
       updates:
         mount_path: /opt/clamav_db/
-        capacity: 2147483648 # 2 GB
+        capacity: 2097152
         storage_class: default
     run_as_core: True

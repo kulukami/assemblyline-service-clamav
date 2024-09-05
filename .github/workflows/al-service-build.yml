@@ -35,12 +35,14 @@ jobs:
       with:
         file: Dockerfile
         push: true
-        tags: kulukami/assemblyline-service-clamav:${{ env.AL_SERVICE_VERSION_BASE }}${{ env.AL_SERVICE_VERSION }}
+        tags: 
+          - kulukami/assemblyline-service-clamav:${{ env.AL_SERVICE_VERSION_BASE }}${{ env.AL_SERVICE_VERSION }}
+          - kulukami/assemblyline-service-clamav:${{ env.AL_SERVICE_VERSION_BASE }}
 
     - name: Update 
       run: |
         sed -i "s|\(image: \).*\(/assemblyline.*\)|\1kulukami\2|g" service_manifest.yml;\
-        sed -i "s/\$SERVICE_TAG/${{ env.AL_SERVICE_VERSION_BASE }}/g" service_manifest.yml
+        sed -i "s/\$SERVICE_TAG/${{ env.AL_SERVICE_IMAGE_TAG }}/g" service_manifest.yml
 
     - name: Upload
       uses: actions/upload-artifact@v4
