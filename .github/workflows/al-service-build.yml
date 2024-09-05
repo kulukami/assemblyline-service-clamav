@@ -27,6 +27,9 @@ jobs:
     - name: Set env base
       run: echo "AL_SERVICE_VERSION_BASE=$(cat VERSION_BASE)" >> $GITHUB_ENV
 
+    - name: Set env tag
+      run: echo "AL_SERVICE_IMAGE_TAG=$(cat VERSION_BASE)$(cat VERSION)" >> $GITHUB_ENV
+
     - name: Build
       uses: docker/build-push-action@v6
       with:
@@ -35,7 +38,9 @@ jobs:
         tags: kulukami/assemblyline-service-clamav:${{ env.AL_SERVICE_VERSION_BASE }}${{ env.AL_SERVICE_VERSION }}
 
     - name: Update 
-      run: zip -r elkeid_driver.zip ~/all_elkeid_drivers
+      run: |
+        sed -i "s|\(image: \).*\(/assemblyline.*\)|\1kulukami\2|g" service_manifest.yml;\
+        sed -i "s/\$SERVICE_TAG/${{ env.AL_SERVICE_VERSION_BASE }}/g" service_manifest.yml
 
     - name: Upload
       uses: actions/upload-artifact@v4
