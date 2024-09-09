@@ -21,13 +21,13 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
-    - name: Set env
+    - name: Set env version
       run: echo "AL_SERVICE_VERSION=$(cat VERSION)" >> $GITHUB_ENV
 
-    - name: Set env base
+    - name: Set env version base
       run: echo "AL_SERVICE_VERSION_BASE=$(cat VERSION_BASE)" >> $GITHUB_ENV
 
-    - name: Set env tag
+    - name: Set env image tag
       run: echo "AL_SERVICE_IMAGE_TAG=$(cat VERSION_BASE)$(cat VERSION)" >> $GITHUB_ENV
 
     - name: Build
@@ -35,9 +35,7 @@ jobs:
       with:
         file: Dockerfile
         push: true
-        tags: 
-          - kulukami/assemblyline-service-clamav:${{ env.AL_SERVICE_VERSION_BASE }}${{ env.AL_SERVICE_VERSION }}
-          - kulukami/assemblyline-service-clamav:${{ env.AL_SERVICE_VERSION_BASE }}
+        tags: kulukami/assemblyline-service-clamav:${{ env.AL_SERVICE_IMAGE_TAG }},kulukami/assemblyline-service-clamav:${{ env.AL_SERVICE_VERSION_BASE }}
 
     - name: Update 
       run: |
